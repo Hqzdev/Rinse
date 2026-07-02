@@ -1,9 +1,29 @@
+from rinse.domain.deduplication import (
+    DeduplicationConfig,
+    DeduplicationMode,
+    ExactDeduplicationOperation,
+    FuzzyDeduplicationConfig,
+    FuzzyDeduplicationOperation,
+    TextSimilarity,
+)
 from rinse.domain.entities import (
     CleaningReport,
     Dataset,
     DuplicateGroup,
     OperationResult,
     ValidationIssue,
+)
+from rinse.domain.normalization import (
+    DateNormalizationConfig,
+    DateNormalizationOperation,
+    EmailNormalizationConfig,
+    EmailNormalizationOperation,
+    PhoneNormalizationConfig,
+    PhoneNormalizationOperation,
+    PhoneNumberNormalizer,
+    TextCase,
+    TextNormalizationConfig,
+    TextNormalizationOperation,
 )
 from rinse.domain.operations import CleaningOperation, OperationOutcome
 from rinse.domain.value_objects import (
@@ -19,12 +39,28 @@ __all__ = [
     "CleaningReport",
     "CleaningOperation",
     "ColumnName",
+    "DateNormalizationConfig",
+    "DateNormalizationOperation",
+    "DeduplicationConfig",
+    "DeduplicationMode",
     "Dataset",
     "DatasetFormat",
     "DatasetReference",
     "DuplicateGroup",
+    "EmailNormalizationConfig",
+    "EmailNormalizationOperation",
+    "ExactDeduplicationOperation",
+    "FuzzyDeduplicationConfig",
+    "FuzzyDeduplicationOperation",
     "OperationResult",
     "OperationOutcome",
+    "PhoneNormalizationConfig",
+    "PhoneNormalizationOperation",
+    "PhoneNumberNormalizer",
     "RowIndex",
+    "TextSimilarity",
+    "TextCase",
+    "TextNormalizationConfig",
+    "TextNormalizationOperation",
     "ValidationIssue",
 ]

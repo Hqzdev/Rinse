@@ -5,6 +5,8 @@ from rinse.adapters.dataset_files import (
     UnsupportedDatasetFormatError,
 )
 from rinse.adapters.pandas_datasets import PandasDatasetMapper, PandasDatasetReader, PandasDatasetWriter
+from rinse.adapters.phone_numbers import PhoneNumbersNormalizer
+from rinse.adapters.rapidfuzz_similarity import RapidFuzzTextSimilarity
 
 __all__ = [
     "DatasetFileError",
@@ -13,5 +15,7 @@ __all__ = [
     "PandasDatasetMapper",
     "PandasDatasetReader",
     "PandasDatasetWriter",
+    "PhoneNumbersNormalizer",
+    "RapidFuzzTextSimilarity",
     "UnsupportedDatasetFormatError",
 ]

@@ -40,6 +40,8 @@ class ArchitectureBoundaryTests(unittest.TestCase):
                 "fastapi",
                 "openpyxl",
                 "pandas",
+                "phonenumbers",
+                "rapidfuzz",
                 "redis",
                 "sqlalchemy",
                 "typer",
@@ -49,7 +51,7 @@ class ArchitectureBoundaryTests(unittest.TestCase):
     def test_application_does_not_import_concrete_adapters_or_interfaces(self) -> None:
         self.assert_no_imports(
             "application",
-            {"rinse.adapters", "rinse.infrastructure", "rinse.interfaces"},
+            {"phonenumbers", "rapidfuzz", "rinse.adapters", "rinse.infrastructure", "rinse.interfaces"},
         )
 
 

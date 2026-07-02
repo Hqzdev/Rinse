@@ -36,6 +36,52 @@ The first concrete adapters support tabular file IO through the `DatasetReader` 
 
 Cleaning work is orchestrated through a composable pipeline. Each operation receives a `Dataset`, returns a new `Dataset`, and emits an `OperationResult`. The pipeline aggregates those results into a machine-readable `CleaningReport` with row counts, changed cells, validation issues, and duplicate groups.
 
+## Deduplication
+
+Rinse supports exact deduplication and fuzzy deduplication as pipeline operations:
+
+- exact deduplication can compare complete rows or selected columns.
+- fuzzy deduplication compares selected columns through a text similarity scorer.
+- `suggest` mode reports risky duplicate candidates without removing rows.
+- `remove_strict` mode removes matches only when they meet the configured threshold.
+- duplicate groups include the kept row, matched rows, similarity score, and reason.
+
+## Normalization
+
+Rinse includes visible normalization operations for common spreadsheet cleanup:
+
+- text normalization trims whitespace, collapses repeated spaces, and can normalize casing.
+- email normalization trims, lowercases, and reports invalid emails.
+- date normalization converts configured input formats into one output format and reports parse failures.
+- phone normalization uses a region-aware formatter and reports invalid phone numbers.
+
+## CLI
+
+Rinse exposes the core pipeline through a terminal interface:
+
+```bash
+rinse profile tests/fixtures/dirty_customers.csv
+rinse clean tests/fixtures/dirty_customers.csv --out clean.xlsx --normalize text,email --text-columns name --email-columns email
+```
+
+The CLI reads and writes through adapters, then runs the same application pipeline that future API and web interfaces will call.
+
+## Homebrew
+
+For local Homebrew installation from the current repository:
+
+```bash
+brew install --HEAD ./Formula/rinse.rb
+rinse --help
+```
+
+For a public tap after the first release:
+
+```bash
+brew tap Hqzdev/rinse
+brew install rinse
+```
+
 ## First milestone
 
 The MVP path is core first, then CLI and reports, then API and web:

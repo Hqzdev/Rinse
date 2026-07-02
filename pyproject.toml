@@ -14,8 +14,14 @@ authors = [
 ]
 dependencies = [
   "openpyxl>=3.1",
-  "pandas>=2.0"
+  "pandas>=2.0",
+  "phonenumbers>=9.0",
+  "rapidfuzz>=3.0",
+  "typer>=0.12"
 ]
+
+[project.scripts]
+rinse = "rinse.interfaces.cli:app"
 
 [project.optional-dependencies]
 dev = [
