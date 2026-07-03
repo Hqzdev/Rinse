@@ -151,7 +151,7 @@ Current endpoints:
 - `GET /api/jobs/{id}/report`
 - `GET /api/jobs/{id}/download`
 
-The API runs cleaning jobs synchronously for now and stores artifacts locally. Background queues, database metadata, and durable artifact storage are intentionally deferred to the API/jobs milestone.
+The API queues cleaning jobs on a background executor, stores metadata in local SQLite, and saves uploaded files, clean outputs, and audit reports as local artifacts. Redis, PostgreSQL, and S3/R2 are production adapter swaps rather than current local defaults.
 
 ## Realistic fixture demo
 

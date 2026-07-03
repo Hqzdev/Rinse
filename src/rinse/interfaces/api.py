@@ -1,4 +1,7 @@
+import json
+import sqlite3
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Optional
@@ -11,9 +14,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from rinse.adapters import HtmlReportWriter, JsonReportWriter, PandasDatasetReader, PandasDatasetWriter
 from rinse.adapters.dataset_files import DatasetFileError, UnsupportedDatasetFormatError
 from rinse.application import CleaningPipeline, CleaningPipelineRequest, ProfileDataset, ProfileDatasetRequest
-from rinse.domain import CleaningReport
+from rinse.domain import CleaningReport, ColumnTypeSuggestion, DuplicateGroup, ValidationIssue
+from rinse.domain.entities import ExportArtifact, OperationResult
 from rinse.domain.entities import Dataset
-from rinse.domain.value_objects import DatasetReference
+from rinse.domain.value_objects import CellChange, ColumnName, DatasetReference, RowIndex
 from rinse.interfaces.cli import build_operations, report_with_artifacts
 
 
@@ -77,17 +81,44 @@ class JobRecord:
     job_id: str
     dataset_id: str
     status: str
-    output_path: Path
-    report_path: Path
-    report: CleaningReport
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    report: Optional[CleaningReport] = None
+    error: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class ArtifactRecord:
+    artifact_id: str
+    owner_id: str
+    label: str
+    kind: str
+    path: Path
 
 
 class ApiStore:
     def __init__(self, root: Path) -> None:
         self.root = root
-        self.datasets: dict[str, DatasetRecord] = {}
-        self.jobs: dict[str, JobRecord] = {}
+        self.database_path = root / "metadata.sqlite3"
         self.root.mkdir(parents=True, exist_ok=True)
+        self.initialize()
+
+    def initialize(self) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                "create table if not exists datasets (dataset_id text primary key, filename text not null, path text not null)"
+            )
+            connection.execute(
+                "create table if not exists jobs (job_id text primary key, dataset_id text not null, status text not null, output_path text, report_path text, report_json text, error text)"
+            )
+            connection.execute(
+                "create table if not exists artifacts (artifact_id text primary key, owner_id text not null, label text not null, kind text not null, path text not null)"
+            )
+
+    def connect(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(self.database_path)
+        connection.row_factory = sqlite3.Row
+        return connection
 
     def save_upload(self, upload: UploadFile, content: bytes) -> DatasetRecord:
         filename = Path(upload.filename or "dataset.csv").name
@@ -96,29 +127,111 @@ class ApiStore:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
         record = DatasetRecord(dataset_id=dataset_id, filename=filename, path=path)
-        self.datasets[dataset_id] = record
+        with self.connect() as connection:
+            connection.execute(
+                "insert into datasets (dataset_id, filename, path) values (?, ?, ?)",
+                (record.dataset_id, record.filename, str(record.path)),
+            )
+        self.save_artifact(
+            ArtifactRecord(
+                artifact_id=uuid4().hex,
+                owner_id=dataset_id,
+                label="Original upload",
+                kind=path.suffix.lstrip(".") or "file",
+                path=path,
+            )
+        )
         return record
 
     def dataset(self, dataset_id: str) -> DatasetRecord:
-        record = self.datasets.get(dataset_id)
-        if record is None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "select dataset_id, filename, path from datasets where dataset_id = ?",
+                (dataset_id,),
+            ).fetchone()
+        if row is None:
             raise KeyError(dataset_id)
-        return record
+        return DatasetRecord(dataset_id=row["dataset_id"], filename=row["filename"], path=Path(row["path"]))
 
     def save_job(self, record: JobRecord) -> JobRecord:
-        self.jobs[record.job_id] = record
+        with self.connect() as connection:
+            connection.execute(
+                "insert into jobs (job_id, dataset_id, status, output_path, report_path, report_json, error) values (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    record.job_id,
+                    record.dataset_id,
+                    record.status,
+                    str(record.output_path) if record.output_path else None,
+                    str(record.report_path) if record.report_path else None,
+                    json.dumps(record.report.to_dict(), ensure_ascii=False) if record.report else None,
+                    record.error,
+                ),
+            )
+        return record
+
+    def update_job(self, record: JobRecord) -> JobRecord:
+        with self.connect() as connection:
+            connection.execute(
+                "update jobs set status = ?, output_path = ?, report_path = ?, report_json = ?, error = ? where job_id = ?",
+                (
+                    record.status,
+                    str(record.output_path) if record.output_path else None,
+                    str(record.report_path) if record.report_path else None,
+                    json.dumps(record.report.to_dict(), ensure_ascii=False) if record.report else None,
+                    record.error,
+                    record.job_id,
+                ),
+            )
         return record
 
     def job(self, job_id: str) -> JobRecord:
-        record = self.jobs.get(job_id)
-        if record is None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "select job_id, dataset_id, status, output_path, report_path, report_json, error from jobs where job_id = ?",
+                (job_id,),
+            ).fetchone()
+        if row is None:
             raise KeyError(job_id)
+        return JobRecord(
+            job_id=row["job_id"],
+            dataset_id=row["dataset_id"],
+            status=row["status"],
+            output_path=Path(row["output_path"]) if row["output_path"] else None,
+            report_path=Path(row["report_path"]) if row["report_path"] else None,
+            report=report_from_dict(json.loads(row["report_json"])) if row["report_json"] else None,
+            error=row["error"],
+        )
+
+    def save_artifact(self, record: ArtifactRecord) -> ArtifactRecord:
+        with self.connect() as connection:
+            connection.execute(
+                "insert into artifacts (artifact_id, owner_id, label, kind, path) values (?, ?, ?, ?, ?)",
+                (record.artifact_id, record.owner_id, record.label, record.kind, str(record.path)),
+            )
         return record
+
+    def artifacts(self, owner_id: str) -> list[ArtifactRecord]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "select artifact_id, owner_id, label, kind, path from artifacts where owner_id = ? order by label",
+                (owner_id,),
+            ).fetchall()
+        return [
+            ArtifactRecord(
+                artifact_id=row["artifact_id"],
+                owner_id=row["owner_id"],
+                label=row["label"],
+                kind=row["kind"],
+                path=Path(row["path"]),
+            )
+            for row in rows
+        ]
 
 
 class ApiService:
-    def __init__(self, store: ApiStore) -> None:
+    def __init__(self, store: ApiStore, executor: Optional[ThreadPoolExecutor] = None) -> None:
         self.store = store
+        self.executor = executor or ThreadPoolExecutor(max_workers=2)
         self.reader = PandasDatasetReader()
         self.writer = PandasDatasetWriter()
 
@@ -150,16 +263,54 @@ class ApiService:
         }
 
     def clean(self, request: CleanJobRequestDto) -> dict[str, object]:
+        self.store.dataset(request.dataset_id)
+        job_id = uuid4().hex
+        job = self.store.save_job(JobRecord(job_id=job_id, dataset_id=request.dataset_id, status="queued"))
+        self.executor.submit(self.run_clean_job, job_id, request)
+        return self.job_payload(job)
+
+    def run_clean_job(self, job_id: str, request: CleanJobRequestDto) -> None:
+        self.store.update_job(JobRecord(job_id=job_id, dataset_id=request.dataset_id, status="running"))
+        try:
+            self.complete_clean_job(job_id, request)
+        except Exception as error:
+            self.store.update_job(
+                JobRecord(
+                    job_id=job_id,
+                    dataset_id=request.dataset_id,
+                    status="failed",
+                    error=str(error),
+                )
+            )
+
+    def complete_clean_job(self, job_id: str, request: CleanJobRequestDto) -> None:
         record = self.store.dataset(request.dataset_id)
         dataset = self.reader.read(DatasetReference(str(record.path)))
         cleaned, report = self.clean_dataset(dataset, request.options)
-        job_id = uuid4().hex
         output_path = self.output_artifact_path(job_id, request.output_format)
         report_path = self.report_artifact_path(job_id, request.report_format)
         self.writer.write(cleaned, DatasetReference(str(output_path)))
         report = report_with_artifacts(report, out=str(output_path), report_path=str(report_path))
         self.write_report(report, report_path)
-        job = self.store.save_job(
+        self.store.save_artifact(
+            ArtifactRecord(
+                artifact_id=uuid4().hex,
+                owner_id=job_id,
+                label="Clean output",
+                kind=output_path.suffix.lstrip(".") or "file",
+                path=output_path,
+            )
+        )
+        self.store.save_artifact(
+            ArtifactRecord(
+                artifact_id=uuid4().hex,
+                owner_id=job_id,
+                label="Audit report",
+                kind=report_path.suffix.lstrip(".") or "report",
+                path=report_path,
+            )
+        )
+        self.store.update_job(
             JobRecord(
                 job_id=job_id,
                 dataset_id=request.dataset_id,
@@ -169,13 +320,14 @@ class ApiService:
                 report=report,
             )
         )
-        return self.job_payload(job)
 
     def job_status(self, job_id: str) -> dict[str, object]:
         return self.job_payload(self.store.job(job_id))
 
     def job_result(self, job_id: str) -> dict[str, object]:
         job = self.store.job(job_id)
+        if job.status != "completed" or job.output_path is None:
+            raise ValueError(f"Job is not completed: {job.status}")
         dataset = self.reader.read(DatasetReference(str(job.output_path)))
         return {
             "job_id": job.job_id,
@@ -185,6 +337,8 @@ class ApiService:
 
     def job_report(self, job_id: str) -> dict[str, object]:
         job = self.store.job(job_id)
+        if job.status != "completed" or job.report is None:
+            raise ValueError(f"Job is not completed: {job.status}")
         return {"job_id": job.job_id, "report": job.report.to_dict()}
 
     def clean_dataset(self, dataset: Dataset, options: CleaningOptionsDto) -> tuple[Dataset, CleaningReport]:
@@ -233,9 +387,19 @@ class ApiService:
             "job_id": job.job_id,
             "dataset_id": job.dataset_id,
             "status": job.status,
+            "error": job.error,
+            "artifacts": [self.artifact_payload(artifact) for artifact in self.store.artifacts(job.job_id)],
             "result_url": f"/api/jobs/{job.job_id}/result",
             "report_url": f"/api/jobs/{job.job_id}/report",
             "download_url": f"/api/jobs/{job.job_id}/download",
+        }
+
+    def artifact_payload(self, artifact: ArtifactRecord) -> dict[str, object]:
+        return {
+            "artifact_id": artifact.artifact_id,
+            "label": artifact.label,
+            "kind": artifact.kind,
+            "filename": artifact.path.name,
         }
 
     def rows(self, dataset: Dataset, limit: int) -> list[dict[str, object]]:
@@ -246,12 +410,12 @@ class ApiService:
         ]
 
 
-def create_app(storage_root: Optional[Path] = None) -> FastAPI:
+def create_app(storage_root: Optional[Path] = None, executor: Optional[ThreadPoolExecutor] = None) -> FastAPI:
     temporary_directory = None
     if storage_root is None:
         temporary_directory = TemporaryDirectory()
         storage_root = Path(temporary_directory.name)
-    service = ApiService(ApiStore(storage_root))
+    service = ApiService(ApiStore(storage_root), executor=executor)
     app = FastAPI(title="Rinse API")
     app.state.temporary_directory = temporary_directory
 
@@ -302,6 +466,8 @@ def create_app(storage_root: Optional[Path] = None) -> FastAPI:
     @app.get("/api/jobs/{job_id}/download")
     async def job_download(job_id: str):
         job = service.store.job(job_id)
+        if job.status != "completed" or job.output_path is None:
+            raise ValueError(f"Job is not completed: {job.status}")
         return FileResponse(job.output_path, filename=job.output_path.name)
 
     return app
@@ -312,3 +478,63 @@ def error_response(status_code: int, code: str, message: str) -> JSONResponse:
 
 
 app = create_app()
+
+
+def report_from_dict(content: dict[str, object]) -> CleaningReport:
+    return CleaningReport(
+        rows_before=int(content["rows_before"]),
+        rows_after=int(content["rows_after"]),
+        operation_results=tuple(
+            OperationResult(
+                name=str(operation["name"]),
+                rows_removed=int(operation["rows_removed"]),
+                cells_changed=tuple(
+                    CellChange(
+                        row=RowIndex(int(change["row"])),
+                        column=ColumnName(str(change["column"])),
+                        before=change["before"],
+                        after=change["after"],
+                        reason=str(change["reason"]),
+                    )
+                    for change in operation["cell_changes"]
+                ),
+                validation_issues=tuple(
+                    ValidationIssue(
+                        row=RowIndex(int(issue["row"])),
+                        column=ColumnName(str(issue["column"])),
+                        rule=str(issue["rule"]),
+                        value=issue["value"],
+                        message=str(issue["message"]),
+                    )
+                    for issue in operation["issues"]
+                ),
+                duplicate_groups=tuple(
+                    DuplicateGroup(
+                        kept_row=RowIndex(int(group["kept_row"])),
+                        matched_rows=tuple(RowIndex(int(row)) for row in group["matched_rows"]),
+                        score=float(group["score"]),
+                        reason=str(group["reason"]),
+                    )
+                    for group in operation["duplicates"]
+                ),
+                type_suggestions=tuple(
+                    ColumnTypeSuggestion(
+                        column=ColumnName(str(suggestion["column"])),
+                        suggested_type=str(suggestion["suggested_type"]),
+                        confidence=float(suggestion["confidence"]),
+                        reason=str(suggestion["reason"]),
+                    )
+                    for suggestion in operation["type_suggestions"]
+                ),
+            )
+            for operation in content["operations"]
+        ),
+        export_artifacts=tuple(
+            ExportArtifact(
+                label=str(artifact["label"]),
+                location=str(artifact["location"]),
+                kind=str(artifact["kind"]),
+            )
+            for artifact in content["export_artifacts"]
+        ),
+    )
