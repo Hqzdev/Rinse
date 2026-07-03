@@ -46,6 +46,14 @@ Rinse supports exact deduplication and fuzzy deduplication as pipeline operation
 - `remove_strict` mode removes matches only when they meet the configured threshold.
 - duplicate groups include the kept row, matched rows, similarity score, and reason.
 
+## Validation
+
+Rinse includes required-value validation as a first standalone validation operation:
+
+- required columns can be checked before or after normalization.
+- blank strings and empty spreadsheet cells are reported as validation issues.
+- validation issues include row, column, rule, value, and message details in the audit report.
+
 ## Normalization
 
 Rinse includes visible normalization operations for common spreadsheet cleanup:
@@ -62,9 +70,19 @@ Rinse exposes the core pipeline through a terminal interface:
 ```bash
 rinse profile tests/fixtures/dirty_customers.csv
 rinse clean tests/fixtures/dirty_customers.csv --out clean.xlsx --normalize text,email --text-columns name --email-columns email
+rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate required --required-columns name,email --report report.json
 ```
 
-The CLI reads and writes through adapters, then runs the same application pipeline that future API and web interfaces will call.
+The CLI reads and writes through adapters, converts between supported file formats based on the output extension, and runs the same application pipeline that future API and web interfaces will call.
+
+## Audit reports
+
+The `--report` option writes a machine-readable JSON report:
+
+- row counts before and after cleaning.
+- rows removed, cells changed, validation issue count, and duplicate group count.
+- detailed cell changes with before/after values.
+- detailed validation issues and duplicate groups.
 
 ## Homebrew
 
@@ -84,7 +102,7 @@ brew install rinse
 
 ## First milestone
 
-The MVP path is core first, then CLI and reports, then API and web:
+The first MVP milestone is complete:
 
 1. Architecture skeleton.
 2. CSV/XLSX/JSON readers and writers.
@@ -92,3 +110,6 @@ The MVP path is core first, then CLI and reports, then API and web:
 4. Exact and fuzzy deduplication.
 5. Normalization operations.
 6. CLI and sample datasets.
+7. Required-value validation.
+8. JSON audit report export.
+9. CLI file conversion through output formats.

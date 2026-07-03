@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -51,6 +52,51 @@ class CliTests(unittest.TestCase):
             self.assertIn("rows_removed: 1", result.output)
             self.assertIn("cells_changed: 2", result.output)
             self.assertIn("validation_issues: 0", result.output)
+
+    def test_clean_writes_report_and_runs_required_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "dirty.csv"
+            target = Path(directory) / "clean.json"
+            report = Path(directory) / "report.json"
+            source.write_text("name,email\nAlice,alice@example.com\nBob,\n")
+            result = CliRunner().invoke(
+                app,
+                [
+                    "clean",
+                    str(source),
+                    "--out",
+                    str(target),
+                    "--report",
+                    str(report),
+                    "--validate",
+                    "required",
+                    "--required-columns",
+                    "name,email",
+                ],
+            )
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue(target.exists())
+            self.assertTrue(report.exists())
+            self.assertIn(f"report: {report}", result.output)
+            content = json.loads(report.read_text())
+            self.assertEqual(content["validation_issue_count"], 1)
+            self.assertEqual(content["operations"][0]["issues"][0]["column"], "email")
+
+    def test_clean_writes_report_for_conversion_without_operations(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "dirty.csv"
+            target = Path(directory) / "clean.json"
+            report = Path(directory) / "report.json"
+            source.write_text("name,email\nAlice,alice@example.com\n")
+            result = CliRunner().invoke(
+                app,
+                ["clean", str(source), "--out", str(target), "--report", str(report)],
+            )
+            self.assertEqual(result.exit_code, 0)
+            content = json.loads(report.read_text())
+            self.assertEqual(content["rows_before"], 1)
+            self.assertEqual(content["rows_after"], 1)
+            self.assertEqual(content["operations"], [])
 
     def test_clean_returns_nonzero_for_missing_input(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

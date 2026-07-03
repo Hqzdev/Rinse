@@ -5,12 +5,22 @@ from pathlib import Path
 
 from rinse.adapters import (
     DatasetFileError,
+    JsonReportWriter,
     PandasDatasetReader,
     PandasDatasetWriter,
     UnsupportedDatasetFormatError,
 )
 from rinse.adapters.dataset_files import DatasetFormatDetector
-from rinse.domain import ColumnName, Dataset, DatasetFormat, DatasetReference
+from rinse.domain import (
+    CellChange,
+    CleaningReport,
+    ColumnName,
+    Dataset,
+    DatasetFormat,
+    DatasetReference,
+    OperationResult,
+    RowIndex,
+)
 
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -96,6 +106,32 @@ class DatasetFileAdapterTests(unittest.TestCase):
             self.assertEqual(round_tripped.row_count, 2)
             self.assertEqual(tuple(column.value for column in round_tripped.columns), ("name", "email"))
             self.assertEqual(round_tripped.rows[1]["email"], None)
+
+    def test_writes_json_report(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "report.json"
+            report = CleaningReport(
+                rows_before=1,
+                rows_after=1,
+                operation_results=(
+                    OperationResult(
+                        name="text-normalization",
+                        cells_changed=(
+                            CellChange(
+                                row=RowIndex(0),
+                                column=ColumnName("name"),
+                                before=" Alice ",
+                                after="Alice",
+                                reason="text-normalization",
+                            ),
+                        ),
+                    ),
+                ),
+            )
+            JsonReportWriter().write(report, DatasetReference(str(target)))
+            content = json.loads(target.read_text())
+            self.assertEqual(content["cells_changed"], 1)
+            self.assertEqual(content["operations"][0]["cell_changes"][0]["after"], "Alice")
 
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ from rinse.domain.normalization import (
     TextNormalizationOperation,
 )
 from rinse.domain.operations import CleaningOperation, OperationOutcome
+from rinse.domain.validation import RequiredValueValidationConfig, RequiredValueValidationOperation
 from rinse.domain.value_objects import (
     CellChange,
     ColumnName,
@@ -57,6 +58,8 @@ __all__ = [
     "PhoneNormalizationConfig",
     "PhoneNormalizationOperation",
     "PhoneNumberNormalizer",
+    "RequiredValueValidationConfig",
+    "RequiredValueValidationOperation",
     "RowIndex",
     "TextSimilarity",
     "TextCase",

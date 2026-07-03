@@ -125,6 +125,17 @@ class CleaningPipelineTests(unittest.TestCase):
                         "cells_changed": 1,
                         "validation_issues": 0,
                         "duplicate_groups": 0,
+                        "cell_changes": [
+                            {
+                                "row": 0,
+                                "column": "name",
+                                "before": " Alice ",
+                                "after": "Alice",
+                                "reason": "trimmed whitespace",
+                            }
+                        ],
+                        "issues": [],
+                        "duplicates": [],
                     }
                 ],
             },

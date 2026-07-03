@@ -116,6 +116,35 @@ class CleaningReport:
                     "cells_changed": len(result.cells_changed),
                     "validation_issues": len(result.validation_issues),
                     "duplicate_groups": len(result.duplicate_groups),
+                    "cell_changes": [
+                        {
+                            "row": change.row.value,
+                            "column": change.column.value,
+                            "before": change.before,
+                            "after": change.after,
+                            "reason": change.reason,
+                        }
+                        for change in result.cells_changed
+                    ],
+                    "issues": [
+                        {
+                            "row": issue.row.value,
+                            "column": issue.column.value,
+                            "rule": issue.rule,
+                            "value": issue.value,
+                            "message": issue.message,
+                        }
+                        for issue in result.validation_issues
+                    ],
+                    "duplicates": [
+                        {
+                            "kept_row": group.kept_row.value,
+                            "matched_rows": [row.value for row in group.matched_rows],
+                            "score": group.score,
+                            "reason": group.reason,
+                        }
+                        for group in result.duplicate_groups
+                    ],
                 }
                 for result in self.operation_results
             ],

@@ -3,10 +3,17 @@ from typing import Optional
 
 import typer
 
-from rinse.adapters import PandasDatasetReader, PandasDatasetWriter, PhoneNumbersNormalizer, RapidFuzzTextSimilarity
+from rinse.adapters import (
+    JsonReportWriter,
+    PandasDatasetReader,
+    PandasDatasetWriter,
+    PhoneNumbersNormalizer,
+    RapidFuzzTextSimilarity,
+)
 from rinse.adapters.dataset_files import DatasetFileError, UnsupportedDatasetFormatError
 from rinse.application import CleaningPipeline, CleaningPipelineRequest, ProfileDataset, ProfileDatasetRequest
 from rinse.domain import (
+    CleaningReport,
     ColumnName,
     DateNormalizationConfig,
     DateNormalizationOperation,
@@ -19,6 +26,8 @@ from rinse.domain import (
     FuzzyDeduplicationOperation,
     PhoneNormalizationConfig,
     PhoneNormalizationOperation,
+    RequiredValueValidationConfig,
+    RequiredValueValidationOperation,
     TextCase,
     TextNormalizationConfig,
     TextNormalizationOperation,
@@ -46,10 +55,13 @@ def profile(input_path: str) -> None:
 def clean(
     input_path: str,
     out: str = typer.Option(..., "--out", "-o"),
+    report_path: str = typer.Option("", "--report"),
     dedup: str = typer.Option("none", "--dedup"),
     dedup_columns: str = typer.Option("", "--dedup-columns"),
     fuzzy_threshold: float = typer.Option(92, "--fuzzy-threshold"),
     fuzzy_mode: str = typer.Option("suggest", "--fuzzy-mode"),
+    validate: str = typer.Option("", "--validate"),
+    required_columns: str = typer.Option("", "--required-columns"),
     normalize: str = typer.Option("", "--normalize"),
     normalize_columns: str = typer.Option("", "--normalize-columns"),
     text_columns: str = typer.Option("", "--text-columns"),
@@ -70,6 +82,8 @@ def clean(
             dedup_columns=dedup_columns,
             fuzzy_threshold=fuzzy_threshold,
             fuzzy_mode=fuzzy_mode,
+            validate=validate,
+            required_columns=required_columns,
             normalize=normalize,
             normalize_columns=normalize_columns,
             text_columns=text_columns,
@@ -82,22 +96,28 @@ def clean(
             phone_region=phone_region,
         )
         cleaned = dataset
-        report = None
+        cleaning_report = None
         if operations:
             result = CleaningPipeline(tuple(operations)).run(CleaningPipelineRequest(dataset=dataset))
             cleaned = result.dataset
-            report = result.report
+            cleaning_report = result.report
+        elif report_path:
+            cleaning_report = CleaningReport(rows_before=dataset.row_count, rows_after=cleaned.row_count)
         writer.write(cleaned, DatasetReference(out))
+        if cleaning_report is not None and report_path:
+            JsonReportWriter().write(cleaning_report, DatasetReference(report_path))
     except (DatasetFileError, UnsupportedDatasetFormatError, ValueError) as error:
         raise typer.BadParameter(str(error))
     typer.echo(f"output: {out}")
     typer.echo(f"rows_before: {dataset.row_count}")
     typer.echo(f"rows_after: {cleaned.row_count}")
-    if report is not None:
-        typer.echo(f"rows_removed: {report.rows_removed}")
-        typer.echo(f"cells_changed: {report.cells_changed}")
-        typer.echo(f"validation_issues: {report.validation_issue_count}")
-        typer.echo(f"duplicate_groups: {report.duplicate_group_count}")
+    if cleaning_report is not None:
+        typer.echo(f"rows_removed: {cleaning_report.rows_removed}")
+        typer.echo(f"cells_changed: {cleaning_report.cells_changed}")
+        typer.echo(f"validation_issues: {cleaning_report.validation_issue_count}")
+        typer.echo(f"duplicate_groups: {cleaning_report.duplicate_group_count}")
+        if report_path:
+            typer.echo(f"report: {report_path}")
 
 
 def build_operations(
@@ -105,6 +125,8 @@ def build_operations(
     dedup_columns: str,
     fuzzy_threshold: float,
     fuzzy_mode: str,
+    validate: str,
+    required_columns: str,
     normalize: str,
     normalize_columns: str,
     text_columns: str,
@@ -117,6 +139,8 @@ def build_operations(
     phone_region: str,
 ) -> list[CleaningOperation]:
     operations: list[CleaningOperation] = []
+    for name in parse_names(validate):
+        operations.append(build_validation_operation(name=name, required_columns=required_columns))
     fallback_columns = parse_columns(normalize_columns)
     for name in parse_names(normalize):
         operations.append(
@@ -156,6 +180,20 @@ def build_operations(
         )
         return operations
     raise ValueError(f"Unsupported deduplication mode: {dedup}")
+
+
+def build_validation_operation(name: str, required_columns: str) -> CleaningOperation:
+    if name == "required":
+        return RequiredValueValidationOperation(
+            config=RequiredValueValidationConfig(
+                columns=required_columns_for_validation(required_columns)
+            )
+        )
+    raise ValueError(f"Unsupported validation operation: {name}")
+
+
+def required_columns_for_validation(value: str) -> tuple[ColumnName, ...]:
+    return required_columns(parse_columns(value), "Required value validation requires --required-columns")
 
 
 def normalization_columns_for(

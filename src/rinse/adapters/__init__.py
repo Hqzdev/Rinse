@@ -4,6 +4,7 @@ from rinse.adapters.dataset_files import (
     DatasetPath,
     UnsupportedDatasetFormatError,
 )
+from rinse.adapters.json_reports import JsonReportWriter
 from rinse.adapters.pandas_datasets import PandasDatasetMapper, PandasDatasetReader, PandasDatasetWriter
 from rinse.adapters.phone_numbers import PhoneNumbersNormalizer
 from rinse.adapters.rapidfuzz_similarity import RapidFuzzTextSimilarity
@@ -12,6 +13,7 @@ __all__ = [
     "DatasetFileError",
     "DatasetFormatDetector",
     "DatasetPath",
+    "JsonReportWriter",
     "PandasDatasetMapper",
     "PandasDatasetReader",
     "PandasDatasetWriter",
