@@ -132,6 +132,27 @@ npm run dev
 
 The page translates the legacy static HTML into a component-based interface with real Rinse fixture data, workflow states, light and dark themes, and a downloadable JSON report sample.
 
+## API
+
+Rinse exposes a thin FastAPI adapter over the same cleaning pipeline used by the CLI:
+
+```bash
+python3 -m uvicorn rinse.interfaces.api:app --reload
+```
+
+Current endpoints:
+
+- `POST /api/datasets/upload`
+- `GET /api/datasets/{id}/profile`
+- `POST /api/datasets/{id}/preview`
+- `POST /api/jobs/clean`
+- `GET /api/jobs/{id}`
+- `GET /api/jobs/{id}/result`
+- `GET /api/jobs/{id}/report`
+- `GET /api/jobs/{id}/download`
+
+The API runs cleaning jobs synchronously for now and stores artifacts locally. Background queues, database metadata, and durable artifact storage are intentionally deferred to the API/jobs milestone.
+
 ## Realistic fixture demo
 
 The repository includes a small messy customer dataset in both CSV and XLSX:
