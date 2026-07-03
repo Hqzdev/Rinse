@@ -1,0 +1,6 @@
+customer_id,name,email,signup_date,amount,status,phone
+C-001,  Alice   Smith , ALICE@example.COM ,01/02/2026,100,active,(415) 555-2671
+C-001-DUP,alice smith,alice@example.com,2026-01-02,100,active,+1 415 555 2671
+C-002,Bob   Stone,bad-email,broken,,draft,123
+C-003,Carla Gomez,carla@example.com,02/14/2026,-5,blocked,+1 212 555 0199
+C-004,Dana Lee,,2026-03-01,42,active,

@@ -1,0 +1,38 @@
+[
+  {
+    "customer_id": "C-001",
+    "name": "Alice Smith",
+    "email": "alice@example.com",
+    "signup_date": "2026-01-02",
+    "amount": 100.0,
+    "status": "active",
+    "phone": "+14155552671"
+  },
+  {
+    "customer_id": "C-002",
+    "name": "Bob Stone",
+    "email": "bad-email",
+    "signup_date": "broken",
+    "amount": "1",
+    "status": "draft",
+    "phone": "123"
+  },
+  {
+    "customer_id": "C-003",
+    "name": "Carla Gomez",
+    "email": "carla@example.com",
+    "signup_date": "2026-02-14",
+    "amount": -5.0,
+    "status": "blocked",
+    "phone": "+12125550199"
+  },
+  {
+    "customer_id": "C-004",
+    "name": "Dana Lee",
+    "email": null,
+    "signup_date": "2026-03-01",
+    "amount": 42.0,
+    "status": "active",
+    "phone": null
+  }
+]

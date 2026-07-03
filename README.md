@@ -89,6 +89,45 @@ The `--report` option writes a machine-readable JSON report:
 - detailed validation issues and duplicate groups.
 - type inference suggestions with confidence and reason.
 
+## Realistic fixture demo
+
+The repository includes a small messy customer dataset in both CSV and XLSX:
+
+- `tests/fixtures/dirty_realistic_customers.csv`
+- `tests/fixtures/dirty_realistic_customers.xlsx`
+
+It includes duplicate and fuzzy-duplicate customers, mixed date formats, invalid email, inconsistent casing, extra spaces, missing values, a broken date, invalid phone data, and an invalid status.
+
+The golden cleaned output and report snapshots are checked in:
+
+- `tests/fixtures/expected_realistic_customers_clean.json`
+- `tests/fixtures/expected_realistic_customers_report.json`
+
+Example result:
+
+```json
+[
+  {
+    "customer_id": "C-001",
+    "name": "Alice Smith",
+    "email": "alice@example.com",
+    "signup_date": "2026-01-02",
+    "amount": 100.0,
+    "status": "active",
+    "phone": "+14155552671"
+  },
+  {
+    "customer_id": "C-002",
+    "name": "Bob Stone",
+    "email": "bad-email",
+    "signup_date": "broken",
+    "amount": "1",
+    "status": "draft",
+    "phone": "123"
+  }
+]
+```
+
 ## Homebrew
 
 For local Homebrew installation from the current repository:

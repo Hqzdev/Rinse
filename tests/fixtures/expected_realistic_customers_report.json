@@ -1,0 +1,296 @@
+{
+  "rows_before": 5,
+  "rows_after": 4,
+  "rows_removed": 1,
+  "cells_changed": 9,
+  "validation_issue_count": 8,
+  "duplicate_group_count": 1,
+  "operations": [
+    {
+      "name": "type-inference",
+      "rows_removed": 0,
+      "cells_changed": 0,
+      "validation_issues": 0,
+      "duplicate_groups": 0,
+      "type_suggestions": [
+        {
+          "column": "amount",
+          "suggested_type": "number",
+          "confidence": 1.0,
+          "reason": "4 non-blank values sampled"
+        },
+        {
+          "column": "signup_date",
+          "suggested_type": "date",
+          "confidence": 0.8,
+          "reason": "5 non-blank values sampled"
+        }
+      ],
+      "cell_changes": [],
+      "issues": [],
+      "duplicates": []
+    },
+    {
+      "name": "missing-value-handling",
+      "rows_removed": 0,
+      "cells_changed": 1,
+      "validation_issues": 0,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [
+        {
+          "row": 2,
+          "column": "amount",
+          "before": null,
+          "after": "1",
+          "reason": "missing-value-handling"
+        }
+      ],
+      "issues": [],
+      "duplicates": []
+    },
+    {
+      "name": "required-value-validation",
+      "rows_removed": 0,
+      "cells_changed": 0,
+      "validation_issues": 1,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [],
+      "issues": [
+        {
+          "row": 4,
+          "column": "email",
+          "rule": "required",
+          "value": null,
+          "message": "Required value is missing"
+        }
+      ],
+      "duplicates": []
+    },
+    {
+      "name": "email-validation",
+      "rows_removed": 0,
+      "cells_changed": 0,
+      "validation_issues": 1,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [],
+      "issues": [
+        {
+          "row": 2,
+          "column": "email",
+          "rule": "valid_email",
+          "value": "bad-email",
+          "message": "Email is invalid"
+        }
+      ],
+      "duplicates": []
+    },
+    {
+      "name": "date-parseability-validation",
+      "rows_removed": 0,
+      "cells_changed": 0,
+      "validation_issues": 1,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [],
+      "issues": [
+        {
+          "row": 2,
+          "column": "signup_date",
+          "rule": "parseable_date",
+          "value": "broken",
+          "message": "Date could not be parsed"
+        }
+      ],
+      "duplicates": []
+    },
+    {
+      "name": "positive-number-validation",
+      "rows_removed": 0,
+      "cells_changed": 0,
+      "validation_issues": 1,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [],
+      "issues": [
+        {
+          "row": 3,
+          "column": "amount",
+          "rule": "positive_number",
+          "value": -5.0,
+          "message": "Value must be positive"
+        }
+      ],
+      "duplicates": []
+    },
+    {
+      "name": "allowed-values-validation",
+      "rows_removed": 0,
+      "cells_changed": 0,
+      "validation_issues": 1,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [],
+      "issues": [
+        {
+          "row": 2,
+          "column": "status",
+          "rule": "allowed_values",
+          "value": "draft",
+          "message": "Value is not in allowed set"
+        }
+      ],
+      "duplicates": []
+    },
+    {
+      "name": "text-normalization",
+      "rows_removed": 0,
+      "cells_changed": 2,
+      "validation_issues": 0,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [
+        {
+          "row": 0,
+          "column": "name",
+          "before": "  Alice   Smith ",
+          "after": "Alice Smith",
+          "reason": "text-normalization"
+        },
+        {
+          "row": 2,
+          "column": "name",
+          "before": "Bob   Stone",
+          "after": "Bob Stone",
+          "reason": "text-normalization"
+        }
+      ],
+      "issues": [],
+      "duplicates": []
+    },
+    {
+      "name": "email-normalization",
+      "rows_removed": 0,
+      "cells_changed": 1,
+      "validation_issues": 1,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [
+        {
+          "row": 0,
+          "column": "email",
+          "before": " ALICE@example.COM ",
+          "after": "alice@example.com",
+          "reason": "email-normalization"
+        }
+      ],
+      "issues": [
+        {
+          "row": 2,
+          "column": "email",
+          "rule": "valid_email",
+          "value": "bad-email",
+          "message": "Email is invalid"
+        }
+      ],
+      "duplicates": []
+    },
+    {
+      "name": "date-normalization",
+      "rows_removed": 0,
+      "cells_changed": 2,
+      "validation_issues": 1,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [
+        {
+          "row": 0,
+          "column": "signup_date",
+          "before": "01/02/2026",
+          "after": "2026-01-02",
+          "reason": "date-normalization"
+        },
+        {
+          "row": 3,
+          "column": "signup_date",
+          "before": "02/14/2026",
+          "after": "2026-02-14",
+          "reason": "date-normalization"
+        }
+      ],
+      "issues": [
+        {
+          "row": 2,
+          "column": "signup_date",
+          "rule": "parseable_date",
+          "value": "broken",
+          "message": "Date could not be parsed"
+        }
+      ],
+      "duplicates": []
+    },
+    {
+      "name": "phone-normalization",
+      "rows_removed": 0,
+      "cells_changed": 3,
+      "validation_issues": 1,
+      "duplicate_groups": 0,
+      "type_suggestions": [],
+      "cell_changes": [
+        {
+          "row": 0,
+          "column": "phone",
+          "before": "(415) 555-2671",
+          "after": "+14155552671",
+          "reason": "phone-normalization"
+        },
+        {
+          "row": 1,
+          "column": "phone",
+          "before": "+1 415 555 2671",
+          "after": "+14155552671",
+          "reason": "phone-normalization"
+        },
+        {
+          "row": 3,
+          "column": "phone",
+          "before": "+1 212 555 0199",
+          "after": "+12125550199",
+          "reason": "phone-normalization"
+        }
+      ],
+      "issues": [
+        {
+          "row": 2,
+          "column": "phone",
+          "rule": "valid_phone",
+          "value": "123",
+          "message": "Phone number is invalid"
+        }
+      ],
+      "duplicates": []
+    },
+    {
+      "name": "fuzzy-deduplication",
+      "rows_removed": 1,
+      "cells_changed": 0,
+      "validation_issues": 0,
+      "duplicate_groups": 1,
+      "type_suggestions": [],
+      "cell_changes": [],
+      "issues": [],
+      "duplicates": [
+        {
+          "kept_row": 0,
+          "matched_rows": [
+            1
+          ],
+          "score": 100.0,
+          "reason": "fuzzy duplicate above threshold 96"
+        }
+      ]
+    }
+  ]
+}
