@@ -2,6 +2,8 @@
 
 Clean messy CSV and Excel files: deduplication, normalization, validation, conversion, and an auditable before/after report.
 
+Rinse is not just a pandas script. The cleaning rules live in a composable application pipeline, every operation returns structured results, and reports are generated from those results instead of console logs. That makes the same engine usable from CLI now and API or web adapters later.
+
 ## Architecture
 
 Rinse starts with a hexagonal core. The data-cleaning engine is isolated from delivery details, so CLI, API, web UI, file storage, and report rendering can change without rewriting domain logic.
@@ -80,6 +82,16 @@ rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate requi
 
 The CLI reads and writes through adapters, converts between supported file formats based on the output extension, and runs the same application pipeline that future API and web interfaces will call.
 
+## Local setup
+
+```bash
+python3 -m pip install -e ".[dev]"
+python3 -m pytest -q
+rinse --help
+```
+
+The Next.js product site is separate from the Python package and lives in `web`.
+
 ## Audit reports
 
 The `--report` option writes a machine-readable JSON report:
@@ -96,6 +108,17 @@ Use a `.html` report path when you need a human-readable audit report:
 ```bash
 rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate required --required-columns name,email --report report.html
 ```
+
+## Safety notes
+
+Rinse is conservative by design:
+
+- fuzzy deduplication defaults to suggestion mode so uncertain matches are reported before deletion.
+- `remove_strict` should use a high threshold and explicit comparison columns.
+- validation issues do not silently mutate data.
+- date, email, and phone parse failures are reported instead of hidden.
+- PDF export is deferred until HTML reports are stable.
+- Docker Compose is not included yet because background jobs, database metadata, and artifact storage belong to the API/jobs milestone.
 
 ## Website
 
