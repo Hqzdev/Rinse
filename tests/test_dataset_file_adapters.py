@@ -5,6 +5,7 @@ from pathlib import Path
 
 from rinse.adapters import (
     DatasetFileError,
+    HtmlReportWriter,
     JsonReportWriter,
     PandasDatasetReader,
     PandasDatasetWriter,
@@ -15,11 +16,15 @@ from rinse.domain import (
     CellChange,
     CleaningReport,
     ColumnName,
+    ColumnTypeSuggestion,
     Dataset,
     DatasetFormat,
     DatasetReference,
+    DuplicateGroup,
+    ExportArtifact,
     OperationResult,
     RowIndex,
+    ValidationIssue,
 )
 
 
@@ -132,6 +137,70 @@ class DatasetFileAdapterTests(unittest.TestCase):
             content = json.loads(target.read_text())
             self.assertEqual(content["cells_changed"], 1)
             self.assertEqual(content["operations"][0]["cell_changes"][0]["after"], "Alice")
+
+    def test_writes_html_report_from_structured_report(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "report.html"
+            report = CleaningReport(
+                rows_before=3,
+                rows_after=2,
+                operation_results=(
+                    OperationResult(
+                        name="quality-check",
+                        rows_removed=1,
+                        cells_changed=(
+                            CellChange(
+                                row=RowIndex(0),
+                                column=ColumnName("name"),
+                                before="< Alice ",
+                                after="Alice",
+                                reason="text-normalization",
+                            ),
+                        ),
+                        validation_issues=(
+                            ValidationIssue(
+                                row=RowIndex(1),
+                                column=ColumnName("email"),
+                                rule="email",
+                                value="bad-email",
+                                message="Invalid email",
+                            ),
+                        ),
+                        duplicate_groups=(
+                            DuplicateGroup(
+                                kept_row=RowIndex(0),
+                                matched_rows=(RowIndex(2),),
+                                score=96.5,
+                                reason="fuzzy-match",
+                            ),
+                        ),
+                        type_suggestions=(
+                            ColumnTypeSuggestion(
+                                column=ColumnName("amount"),
+                                suggested_type="number",
+                                confidence=0.92,
+                                reason="numeric values",
+                            ),
+                        ),
+                    ),
+                ),
+                export_artifacts=(
+                    ExportArtifact(label="Clean output", location="clean.json", kind="json"),
+                    ExportArtifact(label="Audit report", location="report.html", kind="html"),
+                ),
+            )
+            HtmlReportWriter().write(report, DatasetReference(str(target)))
+            content = target.read_text()
+            self.assertIn("<title>Rinse Cleaning Report</title>", content)
+            self.assertIn("Summary", content)
+            self.assertIn("Cell changes", content)
+            self.assertIn("Validation issues", content)
+            self.assertIn("Duplicate groups", content)
+            self.assertIn("Type suggestions", content)
+            self.assertIn("Export artifacts", content)
+            self.assertIn("clean.json", content)
+            self.assertIn("&lt; Alice ", content)
+            self.assertIn("96.5", content)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,18 @@
   "cells_changed": 9,
   "validation_issue_count": 8,
   "duplicate_group_count": 1,
+  "export_artifacts": [
+    {
+      "label": "Clean output",
+      "location": "clean.json",
+      "kind": "json"
+    },
+    {
+      "label": "Audit report",
+      "location": "report.json",
+      "kind": "json"
+    }
+  ],
   "operations": [
     {
       "name": "type-inference",

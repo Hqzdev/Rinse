@@ -118,6 +118,7 @@ class CleaningPipelineTests(unittest.TestCase):
                 "cells_changed": 1,
                 "validation_issue_count": 0,
                 "duplicate_group_count": 0,
+                "export_artifacts": [],
                 "operations": [
                     {
                         "name": "rename-first-cell",

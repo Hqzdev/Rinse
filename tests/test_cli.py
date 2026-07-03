@@ -81,6 +81,37 @@ class CliTests(unittest.TestCase):
             content = json.loads(report.read_text())
             self.assertEqual(content["validation_issue_count"], 1)
             self.assertEqual(content["operations"][0]["issues"][0]["column"], "email")
+            self.assertEqual(content["export_artifacts"][0]["location"], "clean.json")
+
+    def test_clean_writes_html_report(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "dirty.csv"
+            target = Path(directory) / "clean.json"
+            report = Path(directory) / "report.html"
+            source.write_text("name,email\nAlice,alice@example.com\nBob,\n")
+            result = CliRunner().invoke(
+                app,
+                [
+                    "clean",
+                    str(source),
+                    "--out",
+                    str(target),
+                    "--report",
+                    str(report),
+                    "--validate",
+                    "required",
+                    "--required-columns",
+                    "name,email",
+                ],
+            )
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue(report.exists())
+            content = report.read_text()
+            self.assertIn("<title>Rinse Cleaning Report</title>", content)
+            self.assertIn("Validation issues", content)
+            self.assertIn("Export artifacts", content)
+            self.assertIn("clean.json", content)
+            self.assertIn("email", content)
 
     def test_clean_writes_report_for_conversion_without_operations(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

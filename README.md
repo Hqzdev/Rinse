@@ -75,6 +75,7 @@ rinse profile tests/fixtures/dirty_customers.csv
 rinse clean tests/fixtures/dirty_customers.csv --out clean.xlsx --normalize text,email --text-columns name --email-columns email
 rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate required --required-columns name,email --report report.json
 rinse clean tests/fixtures/dirty_customers.csv --out clean.json --infer-types --missing-policy fill --missing-columns email --fill-value unknown@example.com --validate email,date --valid-email-columns email --parseable-date-columns signup_date --report report.json
+rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate required --required-columns name,email --report report.html
 ```
 
 The CLI reads and writes through adapters, converts between supported file formats based on the output extension, and runs the same application pipeline that future API and web interfaces will call.
@@ -88,6 +89,13 @@ The `--report` option writes a machine-readable JSON report:
 - detailed cell changes with before/after values.
 - detailed validation issues and duplicate groups.
 - type inference suggestions with confidence and reason.
+- export artifacts for the clean output and audit report.
+
+Use a `.html` report path when you need a human-readable audit report:
+
+```bash
+rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate required --required-columns name,email --report report.html
+```
 
 ## Website
 

@@ -4,6 +4,7 @@ from typing import Optional
 import typer
 
 from rinse.adapters import (
+    HtmlReportWriter,
     JsonReportWriter,
     PandasDatasetReader,
     PandasDatasetWriter,
@@ -28,6 +29,7 @@ from rinse.domain import (
     EmailNormalizationOperation,
     EmailValidationConfig,
     EmailValidationOperation,
+    ExportArtifact,
     ExactDeduplicationOperation,
     FuzzyDeduplicationConfig,
     FuzzyDeduplicationOperation,
@@ -151,7 +153,8 @@ def clean(
             cleaning_report = CleaningReport(rows_before=dataset.row_count, rows_after=cleaned.row_count)
         writer.write(cleaned, DatasetReference(out))
         if cleaning_report is not None and report_path:
-            JsonReportWriter().write(cleaning_report, DatasetReference(report_path))
+            cleaning_report = report_with_artifacts(cleaning_report, out=out, report_path=report_path)
+            build_report_writer(report_path).write(cleaning_report, DatasetReference(report_path))
     except (DatasetFileError, UnsupportedDatasetFormatError, ValueError) as error:
         raise typer.BadParameter(str(error))
     typer.echo(f"output: {out}")
@@ -271,6 +274,33 @@ def build_operations(
         )
         return operations
     raise ValueError(f"Unsupported deduplication mode: {dedup}")
+
+
+def build_report_writer(report_path: str):
+    suffix = Path(report_path).suffix.lower()
+    if suffix in ("", ".json"):
+        return JsonReportWriter()
+    if suffix in (".html", ".htm"):
+        return HtmlReportWriter()
+    raise ValueError("Report format must be .json or .html")
+
+
+def report_with_artifacts(report: CleaningReport, out: str, report_path: str) -> CleaningReport:
+    output = Path(out)
+    audit_report = Path(report_path)
+    return CleaningReport(
+        rows_before=report.rows_before,
+        rows_after=report.rows_after,
+        operation_results=report.operation_results,
+        export_artifacts=(
+            ExportArtifact(label="Clean output", location=output.name, kind=output.suffix.lstrip(".") or "file"),
+            ExportArtifact(
+                label="Audit report",
+                location=audit_report.name,
+                kind=audit_report.suffix.lstrip(".") or "report",
+            ),
+        ),
+    )
 
 
 def build_missing_value_operation(

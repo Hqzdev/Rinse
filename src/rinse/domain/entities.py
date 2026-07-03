@@ -91,10 +91,26 @@ class OperationResult:
 
 
 @dataclass(frozen=True)
+class ExportArtifact:
+    label: str
+    location: str
+    kind: str
+
+    def __post_init__(self) -> None:
+        if not self.label.strip():
+            raise ValueError("Export artifact label cannot be empty")
+        if not self.location.strip():
+            raise ValueError("Export artifact location cannot be empty")
+        if not self.kind.strip():
+            raise ValueError("Export artifact kind cannot be empty")
+
+
+@dataclass(frozen=True)
 class CleaningReport:
     rows_before: int
     rows_after: int
     operation_results: tuple[OperationResult, ...] = field(default_factory=tuple)
+    export_artifacts: tuple[ExportArtifact, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if self.rows_before < 0:
@@ -126,6 +142,14 @@ class CleaningReport:
             "cells_changed": self.cells_changed,
             "validation_issue_count": self.validation_issue_count,
             "duplicate_group_count": self.duplicate_group_count,
+            "export_artifacts": [
+                {
+                    "label": artifact.label,
+                    "location": artifact.location,
+                    "kind": artifact.kind,
+                }
+                for artifact in self.export_artifacts
+            ],
             "operations": [
                 {
                     "name": result.name,

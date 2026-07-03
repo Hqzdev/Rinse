@@ -11,6 +11,7 @@ from rinse.domain.entities import (
     ColumnTypeSuggestion,
     Dataset,
     DuplicateGroup,
+    ExportArtifact,
     OperationResult,
     ValidationIssue,
 )
@@ -74,6 +75,7 @@ __all__ = [
     "DatasetFormat",
     "DatasetReference",
     "DuplicateGroup",
+    "ExportArtifact",
     "EmailValidationConfig",
     "EmailValidationOperation",
     "EmailNormalizationConfig",
