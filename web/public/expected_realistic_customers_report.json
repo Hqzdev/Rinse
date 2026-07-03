@@ -1,0 +1,52 @@
+{
+  "rows_before": 5,
+  "rows_after": 4,
+  "rows_removed": 1,
+  "cells_changed": 9,
+  "validation_issue_count": 8,
+  "duplicate_group_count": 1,
+  "operations": [
+    {
+      "name": "type-inference",
+      "rows_removed": 0,
+      "cells_changed": 0,
+      "validation_issues": 0,
+      "duplicate_groups": 0,
+      "type_suggestions": [
+        {
+          "column": "amount",
+          "suggested_type": "number",
+          "confidence": 1.0,
+          "reason": "4 non-blank values sampled"
+        },
+        {
+          "column": "signup_date",
+          "suggested_type": "date",
+          "confidence": 0.8,
+          "reason": "5 non-blank values sampled"
+        }
+      ],
+      "cell_changes": [],
+      "issues": [],
+      "duplicates": []
+    },
+    {
+      "name": "fuzzy-deduplication",
+      "rows_removed": 1,
+      "cells_changed": 0,
+      "validation_issues": 0,
+      "duplicate_groups": 1,
+      "type_suggestions": [],
+      "cell_changes": [],
+      "issues": [],
+      "duplicates": [
+        {
+          "kept_row": 0,
+          "matched_rows": [1],
+          "score": 100.0,
+          "reason": "fuzzy duplicate above threshold 96"
+        }
+      ]
+    }
+  ]
+}

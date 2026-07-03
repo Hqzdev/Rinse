@@ -89,6 +89,18 @@ The `--report` option writes a machine-readable JSON report:
 - detailed validation issues and duplicate groups.
 - type inference suggestions with confidence and reason.
 
+## Website
+
+The Next.js product website lives in `web`:
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+The page translates the legacy static HTML into a component-based interface with real Rinse fixture data, workflow states, light and dark themes, and a downloadable JSON report sample.
+
 ## Realistic fixture demo
 
 The repository includes a small messy customer dataset in both CSV and XLSX:
