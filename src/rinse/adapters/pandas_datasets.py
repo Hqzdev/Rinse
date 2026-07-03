@@ -82,7 +82,10 @@ class PandasDatasetWriter(DatasetWriter):
             frame.to_excel(path, index=False, engine="openpyxl")
             return target
         if dataset_format == DatasetFormat.JSON:
-            records = frame.to_dict(orient="records")
+            records = [
+                {column.value: row.get(column.value) for column in dataset.columns}
+                for row in dataset.rows
+            ]
             path.write_text(json.dumps(records, ensure_ascii=False, indent=2))
             return target
         raise DatasetFileError(f"Cannot write dataset format: {dataset_format.value}")
