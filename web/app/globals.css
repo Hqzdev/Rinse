@@ -48,6 +48,9 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
+  transition:
+    background-color 260ms ease,
+    color 260ms ease;
 }
 
 a {
@@ -160,8 +163,62 @@ code {
   border-color: var(--border-strong);
 }
 
+.icon-button,
+.github-link,
+.command-button,
+.primary-link,
+.cta-actions a {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.primary-link:hover,
+.cta-actions a:hover,
+.github-link:hover,
+.command-button:hover,
+.icon-button:hover {
+  transform: translateY(-1px);
+}
+
 .hero {
   padding-top: clamp(52px, 9vh, 96px);
+}
+
+.hero .eyebrow,
+.hero h1,
+.hero-lede,
+.hero-copy,
+.hero-actions,
+.comparison-shell,
+.metric-strip {
+  animation: rise-in 640ms ease both;
+}
+
+.hero h1 {
+  animation-delay: 70ms;
+}
+
+.hero-lede {
+  animation-delay: 130ms;
+}
+
+.hero-copy {
+  animation-delay: 190ms;
+}
+
+.hero-actions {
+  animation-delay: 250ms;
+}
+
+.comparison-shell {
+  animation-delay: 330ms;
+}
+
+.metric-strip {
+  animation-delay: 430ms;
 }
 
 .eyebrow,
@@ -254,16 +311,33 @@ code {
 .comparison-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 136px minmax(0, 1fr);
+  position: relative;
+  overflow: hidden;
   margin-top: 58px;
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow);
 }
 
+.comparison-shell::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -26%;
+  width: 22%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 13%, transparent), transparent);
+  content: "";
+  opacity: 0.75;
+  pointer-events: none;
+  transform: skewX(-12deg);
+  animation: compare-sweep 7.2s ease-in-out infinite;
+}
+
 .operation-rail {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
   gap: 14px;
   border-right: 1px solid var(--border);
   border-left: 1px solid var(--border);
@@ -294,11 +368,15 @@ code {
   height: 5px;
   background: var(--accent);
   content: "";
+  animation: dot-read 3.8s ease-in-out infinite;
 }
 
 .data-panel {
   min-width: 0;
   background: var(--surface);
+  transition:
+    background-color 260ms ease,
+    border-color 260ms ease;
 }
 
 .panel-head {
@@ -331,11 +409,17 @@ code {
   border-top: 1px solid var(--border);
 }
 
+.table-row:not(.table-head) {
+  animation: row-enter 520ms ease both;
+  animation-delay: calc(var(--row) * 55ms);
+}
+
 .table-head {
   border-top: 0;
 }
 
 .table-row span {
+  position: relative;
   min-width: 0;
   overflow: hidden;
   padding: 7.5px 10px;
@@ -372,6 +456,8 @@ code {
 
 .cell-fixed {
   background: color-mix(in srgb, var(--success) 11%, transparent);
+  animation: fixed-cell 4.8s ease-in-out infinite;
+  animation-delay: calc(var(--cell) * 90ms);
 }
 
 .cell-missing {
@@ -396,6 +482,7 @@ code {
   color: var(--muted);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px;
+  animation: metric-tick 560ms ease both;
 }
 
 .metric-strip b {
@@ -441,6 +528,8 @@ code {
 .process-step {
   position: relative;
   padding-top: 24px;
+  animation: rise-in 540ms ease both;
+  animation-delay: calc(var(--step) * 110ms);
 }
 
 .process-step::before {
@@ -451,6 +540,9 @@ code {
   height: 2px;
   background: var(--text);
   content: "";
+  transform-origin: left;
+  animation: rule-grow 700ms ease both;
+  animation-delay: calc(var(--step) * 110ms + 120ms);
 }
 
 .process-step span {
@@ -494,9 +586,44 @@ code {
 .object-surface,
 .pipeline-card,
 .report-card {
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow);
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    transform 220ms ease;
+}
+
+.object-surface::before,
+.pipeline-card::before,
+.report-card::before {
+  position: absolute;
+  inset: 0;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-18px);
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.object-surface:hover,
+.pipeline-card:hover,
+.report-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  transform: translateY(-2px);
+}
+
+.object-surface:hover::before,
+.pipeline-card:hover::before,
+.report-card:hover::before {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .object-surface {
@@ -515,6 +642,7 @@ code {
 .object-surface:hover .cell-danger,
 .object-surface:hover .cell-duplicate {
   background: color-mix(in srgb, currentColor 5%, transparent);
+  animation: damage-flash 1.8s ease-in-out infinite;
 }
 
 .pipeline-card {
@@ -534,6 +662,17 @@ code {
   width: 1px;
   background: var(--border-strong);
   content: "";
+}
+
+.pipeline-line::after {
+  position: absolute;
+  left: 1px;
+  width: 7px;
+  height: 22px;
+  background: linear-gradient(180deg, transparent, var(--accent), transparent);
+  content: "";
+  opacity: 0.82;
+  animation: pipeline-cursor 4.8s ease-in-out infinite;
 }
 
 .pipeline-step {
@@ -556,6 +695,9 @@ code {
   border-radius: 50%;
   background: var(--accent);
   content: "";
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 20%, transparent);
+  animation: node-pulse 4.2s ease infinite;
+  animation-delay: calc(var(--step) * 130ms);
 }
 
 .pipeline-step span {
@@ -604,6 +746,7 @@ code {
   min-width: 0;
   padding: 13px 16px;
   border-right: 1px solid var(--border);
+  animation: metric-tick 620ms ease both;
 }
 
 .report-metric:nth-child(3n) {
@@ -644,6 +787,7 @@ code {
   gap: 10px;
   padding: 7px 0;
   font-size: 12.5px;
+  animation: row-enter 500ms ease both;
 }
 
 .issue-row svg {
@@ -685,6 +829,14 @@ code {
   min-height: 190px;
   background: var(--surface);
   padding: 18px;
+  transition:
+    background-color 220ms ease,
+    transform 220ms ease;
+}
+
+.architecture-layer:hover {
+  background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%);
+  transform: translateY(-2px);
 }
 
 .final-cta {
@@ -724,6 +876,114 @@ code {
   }
   38%,
   68% {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes compare-sweep {
+  0%,
+  34% {
+    transform: translateX(0) skewX(-12deg);
+  }
+  58%,
+  100% {
+    transform: translateX(620%) skewX(-12deg);
+  }
+}
+
+@keyframes row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fixed-cell {
+  0%,
+  100% {
+    background: color-mix(in srgb, var(--success) 9%, transparent);
+  }
+  48% {
+    background: color-mix(in srgb, var(--success) 18%, transparent);
+  }
+}
+
+@keyframes damage-flash {
+  0%,
+  100% {
+    filter: saturate(1);
+  }
+  50% {
+    filter: saturate(1.35);
+  }
+}
+
+@keyframes metric-tick {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rule-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pipeline-cursor {
+  0%,
+  100% {
+    top: 2px;
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.9;
+  }
+  82% {
+    top: calc(100% - 24px);
+    opacity: 0.9;
+  }
+}
+
+@keyframes node-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+}
+
+@keyframes dot-read {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  45% {
     opacity: 1;
   }
 }
