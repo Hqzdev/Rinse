@@ -80,6 +80,10 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(report.json()["report"]["validation_issue_count"], 1)
             self.assertEqual(report.json()["report"]["export_artifacts"][1]["kind"], "html")
 
+            report_download = client.get(f"/api/jobs/{job_id}/report/download")
+            self.assertEqual(report_download.status_code, 200)
+            self.assertIn("<!doctype html>", report_download.text.lower())
+
             download = client.get(f"/api/jobs/{job_id}/download")
             self.assertEqual(download.status_code, 200)
             self.assertIn("Alice", download.text)

@@ -8,6 +8,7 @@ from typing import Optional
 from uuid import uuid4
 
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -391,6 +392,7 @@ class ApiService:
             "artifacts": [self.artifact_payload(artifact) for artifact in self.store.artifacts(job.job_id)],
             "result_url": f"/api/jobs/{job.job_id}/result",
             "report_url": f"/api/jobs/{job.job_id}/report",
+            "report_download_url": f"/api/jobs/{job.job_id}/report/download",
             "download_url": f"/api/jobs/{job.job_id}/download",
         }
 
@@ -417,6 +419,12 @@ def create_app(storage_root: Optional[Path] = None, executor: Optional[ThreadPoo
         storage_root = Path(temporary_directory.name)
     service = ApiService(ApiStore(storage_root), executor=executor)
     app = FastAPI(title="Rinse API")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.state.temporary_directory = temporary_directory
 
     @app.exception_handler(KeyError)
@@ -462,6 +470,13 @@ def create_app(storage_root: Optional[Path] = None, executor: Optional[ThreadPoo
     @app.get("/api/jobs/{job_id}/report")
     async def job_report(job_id: str):
         return service.job_report(job_id)
+
+    @app.get("/api/jobs/{job_id}/report/download")
+    async def job_report_download(job_id: str):
+        job = service.store.job(job_id)
+        if job.status != "completed" or job.report_path is None:
+            raise ValueError(f"Job is not completed: {job.status}")
+        return FileResponse(job.report_path, filename=job.report_path.name)
 
     @app.get("/api/jobs/{job_id}/download")
     async def job_download(job_id: str):
