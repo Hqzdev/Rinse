@@ -247,7 +247,7 @@ export function WebDemo() {
     <section className="demo-section" id="demo">
       <div className="wrap demo-shell">
         <div className="demo-intro">
-          <span className="eyebrow">Live API demo</span>
+          <span className="eyebrow">Live API workflow</span>
           <h1>Upload messy data, preview the cleanup, then export the evidence.</h1>
           <p>
             This screen calls the FastAPI adapter directly. The browser handles selection and display; the cleaning logic stays in the Python pipeline.

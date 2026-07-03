@@ -43,7 +43,7 @@ function PipelineInstrument() {
         <h2>Cleaning pipeline instrument</h2>
         <p>
           Each operation returns a structured result. The report is built from those results,
-          so CLI, API, and future web UI can explain the same run without rewriting logic.
+          so CLI, API, and web UI explain the same run without rewriting logic.
         </p>
       </div>
       <div className="pipeline-card">

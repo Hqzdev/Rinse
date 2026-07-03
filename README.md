@@ -1,88 +1,21 @@
 # Rinse
 
-Clean messy CSV and Excel files: deduplication, normalization, validation, conversion, and an auditable before/after report.
+Rinse is an auditable data-cleaning tool for messy CSV and Excel files. It normalizes inconsistent values, validates data quality rules, detects exact and fuzzy duplicates, exports clean datasets, and produces a structured report that explains what changed.
 
-Rinse is not just a pandas script. The cleaning rules live in a composable application pipeline, every operation returns structured results, and reports are generated from those results instead of console logs. That makes the same engine usable from CLI now and API or web adapters later.
+The project is built as a product-grade cleaning engine rather than a one-off pandas script. The core workflow lives behind application use cases and ports, so the same behavior is available through the CLI, FastAPI adapter, and Next.js web interface.
 
-## Architecture
+## What Rinse Does
 
-Rinse starts with a hexagonal core. The data-cleaning engine is isolated from delivery details, so CLI, API, web UI, file storage, and report rendering can change without rewriting domain logic.
+- Reads CSV and XLSX files and exports CSV, XLSX, or JSON.
+- Normalizes text, whitespace, casing, dates, emails, and phone numbers.
+- Detects exact duplicates and fuzzy duplicates with configurable safety controls.
+- Infers probable column types without mutating data.
+- Handles missing values through keep, drop, fill, mean, median, or mode policies.
+- Validates required values, numeric ranges, positive numbers, allowed values, emails, and parseable dates.
+- Generates JSON and HTML audit reports from structured run data.
+- Exposes the same cleaning pipeline through CLI, API, and web interfaces.
 
-```text
-src/rinse/
-  domain/          core entities and value objects
-  application/     use cases that orchestrate ports
-  ports/           interfaces for external capabilities
-  adapters/        concrete readers, writers, and renderers
-  infrastructure/  database, storage, queue, and config details
-  interfaces/      CLI, API, and web entrypoints
-```
-
-Current boundary rules:
-
-- `domain` does not import FastAPI, Typer, pandas, openpyxl, Redis, or SQLAlchemy.
-- `application` depends on ports, not concrete adapters.
-- file readers, writers, storage, reports, jobs, CLI, and API sit outside the core.
-
-## File adapters
-
-The first concrete adapters support tabular file IO through the `DatasetReader` and `DatasetWriter` ports:
-
-- CSV read/write through pandas.
-- XLSX read/write through pandas with openpyxl.
-- JSON record export.
-- format detection from `DatasetReference`.
-- structured errors for unsupported formats and invalid file references.
-
-## Cleaning pipeline
-
-Cleaning work is orchestrated through a composable pipeline. Each operation receives a `Dataset`, returns a new `Dataset`, and emits an `OperationResult`. The pipeline aggregates those results into a machine-readable `CleaningReport` with row counts, changed cells, validation issues, and duplicate groups.
-
-## Deduplication
-
-Rinse supports exact deduplication and fuzzy deduplication as pipeline operations:
-
-- exact deduplication can compare complete rows or selected columns.
-- fuzzy deduplication compares selected columns through a text similarity scorer.
-- `suggest` mode reports risky duplicate candidates without removing rows.
-- `remove_strict` mode removes matches only when they meet the configured threshold.
-- duplicate groups include the kept row, matched rows, similarity score, and reason.
-
-## Validation
-
-Rinse includes standalone data-quality operations:
-
-- probable column types can be inferred as suggestions without mutating data.
-- explicit type overrides can be supplied when inference would be misleading.
-- missing values can be kept, dropped by row, filled with a static value, mean, median, or mode.
-- required, numeric range, positive number, allowed values, email, and date parseability rules can be checked.
-- validation issues include row, column, rule, value, and message details in the audit report.
-- missing value changes are represented as normal cell changes in the audit report.
-
-## Normalization
-
-Rinse includes visible normalization operations for common spreadsheet cleanup:
-
-- text normalization trims whitespace, collapses repeated spaces, and can normalize casing.
-- email normalization trims, lowercases, and reports invalid emails.
-- date normalization converts configured input formats into one output format and reports parse failures.
-- phone normalization uses a region-aware formatter and reports invalid phone numbers.
-
-## CLI
-
-Rinse exposes the core pipeline through a terminal interface:
-
-```bash
-rinse profile tests/fixtures/dirty_customers.csv
-rinse clean tests/fixtures/dirty_customers.csv --out clean.xlsx --normalize text,email --text-columns name --email-columns email
-rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate required --required-columns name,email --report report.json
-rinse clean tests/fixtures/dirty_customers.csv --out clean.json --infer-types --missing-policy fill --missing-columns email --fill-value unknown@example.com --validate email,date --valid-email-columns email --parseable-date-columns signup_date --report report.json
-rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate required --required-columns name,email --report report.html
-```
-
-The CLI reads and writes through adapters, converts between supported file formats based on the output extension, and runs the same application pipeline that future API and web interfaces will call.
-
-## Local setup
+## Quickstart
 
 ```bash
 python3 -m pip install -e ".[dev]"
@@ -90,57 +23,103 @@ python3 -m pytest -q
 rinse --help
 ```
 
-The Next.js product site is separate from the Python package and lives in `web`.
-
-## Audit reports
-
-The `--report` option writes a machine-readable JSON report:
-
-- row counts before and after cleaning.
-- rows removed, cells changed, validation issue count, and duplicate group count.
-- detailed cell changes with before/after values.
-- detailed validation issues and duplicate groups.
-- type inference suggestions with confidence and reason.
-- export artifacts for the clean output and audit report.
-
-Use a `.html` report path when you need a human-readable audit report:
+Run a basic clean:
 
 ```bash
-rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate required --required-columns name,email --report report.html
+rinse clean tests/fixtures/dirty_customers.csv \
+  --out clean.json \
+  --normalize text,email \
+  --text-columns name \
+  --email-columns email \
+  --report report.html
 ```
 
-## Safety notes
-
-Rinse is conservative by design:
-
-- fuzzy deduplication defaults to suggestion mode so uncertain matches are reported before deletion.
-- `remove_strict` should use a high threshold and explicit comparison columns.
-- validation issues do not silently mutate data.
-- date, email, and phone parse failures are reported instead of hidden.
-- PDF export is deferred until HTML reports are stable.
-- Docker Compose is not included yet because background jobs, database metadata, and artifact storage belong to the API/jobs milestone.
-
-## Website
-
-The Next.js product website lives in `web`:
+Inspect a dataset before cleaning:
 
 ```bash
-cd web
-npm install
-npm run dev
+rinse profile tests/fixtures/dirty_realistic_customers.csv
 ```
 
-The page translates the legacy static HTML into a component-based interface with real Rinse fixture data, workflow states, light and dark themes, and a downloadable JSON report sample.
+## Architecture
+
+Rinse uses a hexagonal architecture. Domain and application code are isolated from file formats, frameworks, storage, job execution, and UI concerns.
+
+```text
+src/rinse/
+  domain/          entities, value objects, cleaning operations
+  application/     use cases and pipeline orchestration
+  ports/           interfaces for datasets, reports, jobs, and storage
+  adapters/        pandas IO, report writers, similarity, phone formatting
+  infrastructure/  implementation boundary for runtime services
+  interfaces/      Typer CLI and FastAPI entrypoints
+```
+
+Boundary rules:
+
+- `domain` does not import FastAPI, Typer, pandas, openpyxl, Redis, SQLAlchemy, or frontend code.
+- `application` orchestrates workflows without knowing concrete readers, writers, storage, or web frameworks.
+- CLI, API, report rendering, file IO, and web UI are delivery adapters around the same core pipeline.
+
+This keeps the cleaning behavior testable and reusable instead of coupling it to a single interface.
+
+## CLI
+
+The CLI is built with Typer and calls application use cases instead of duplicating cleaning logic.
+
+```bash
+rinse clean tests/fixtures/dirty_customers.csv \
+  --out clean.xlsx \
+  --normalize text,email \
+  --text-columns name \
+  --email-columns email
+```
+
+Run validation and write a JSON report:
+
+```bash
+rinse clean tests/fixtures/dirty_customers.csv \
+  --out clean.json \
+  --validate required \
+  --required-columns name,email \
+  --report report.json
+```
+
+Run a fuller data-quality workflow:
+
+```bash
+rinse clean tests/fixtures/dirty_realistic_customers.csv \
+  --out clean.json \
+  --normalize text,email,date,phone \
+  --text-columns name,status \
+  --email-columns email \
+  --date-columns signup_date \
+  --phone-columns phone \
+  --infer-types \
+  --missing-policy fill \
+  --missing-columns amount \
+  --fill-value 1 \
+  --validate required,email,date,positive,allowed \
+  --required-columns customer_id,name,email,signup_date,amount \
+  --valid-email-columns email \
+  --parseable-date-columns signup_date \
+  --positive-columns amount \
+  --allowed-columns status \
+  --allowed-values active,blocked \
+  --dedup fuzzy \
+  --dedup-columns name,email \
+  --fuzzy-threshold 90 \
+  --report report.html
+```
 
 ## API
 
-Rinse exposes a thin FastAPI adapter over the same cleaning pipeline used by the CLI:
+Rinse exposes a FastAPI adapter over the same pipeline.
 
 ```bash
-python3 -m uvicorn rinse.interfaces.api:app --reload
+PYTHONPATH=src python3 -m uvicorn rinse.interfaces.api:app --reload
 ```
 
-Current endpoints:
+Endpoints:
 
 - `POST /api/datasets/upload`
 - `GET /api/datasets/{id}/profile`
@@ -150,24 +129,100 @@ Current endpoints:
 - `GET /api/jobs/{id}/result`
 - `GET /api/jobs/{id}/report`
 - `GET /api/jobs/{id}/download`
+- `GET /api/jobs/{id}/report/download`
 
-The API queues cleaning jobs on a background executor, stores metadata in local SQLite, and saves uploaded files, clean outputs, and audit reports as local artifacts. Redis, PostgreSQL, and S3/R2 are production adapter swaps rather than current local defaults.
+The API queues clean jobs on a background executor, stores dataset/job/artifact metadata in local SQLite, and writes uploaded files, clean outputs, and reports to local artifact storage.
 
-## Realistic fixture demo
+The local SQLite and filesystem storage are intentionally simple runtime defaults. Redis, PostgreSQL, and S3/R2 fit behind the same job/storage boundaries when the deployment target needs distributed workers or external artifact storage.
 
-The repository includes a small messy customer dataset in both CSV and XLSX:
+## Web Interface
+
+The Next.js interface lives in `web` and calls the FastAPI adapter directly.
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+By default, the web app expects the API at `http://127.0.0.1:8000`. Set `NEXT_PUBLIC_RINSE_API_URL` when using a different API origin.
+
+The first screen supports:
+
+- file upload or built-in sample data;
+- dataset profile and column display;
+- operation selection with parameters;
+- before/after preview from the API;
+- report summary from structured cleaning results;
+- clean job status and recent jobs;
+- clean file and audit report downloads.
+
+## Reports
+
+Reports are generated from `CleaningReport` data, not console output. JSON reports are machine-readable, and HTML reports are intended for human review.
+
+Report contents include:
+
+- rows before and after cleaning;
+- rows removed;
+- changed cell counts;
+- validation issue counts;
+- duplicate group counts;
+- detailed cell changes with before and after values;
+- validation issues with row, column, rule, value, and message;
+- fuzzy duplicate groups with kept rows, matched rows, scores, and reasons;
+- type inference suggestions with confidence and explanation;
+- export artifacts for clean output and report files.
+
+Generate an HTML report:
+
+```bash
+rinse clean tests/fixtures/dirty_customers.csv \
+  --out clean.json \
+  --validate required \
+  --required-columns name,email \
+  --report report.html
+```
+
+## Cleaning Operations
+
+### Normalization
+
+- Text normalization trims whitespace, collapses repeated spaces, and applies optional casing.
+- Email normalization trims and lowercases valid email-like values while reporting invalid values.
+- Date normalization converts configured input formats into a target output format.
+- Phone normalization uses region-aware formatting and reports invalid phone numbers.
+
+### Deduplication
+
+- Exact deduplication can compare whole rows or selected columns.
+- Fuzzy deduplication compares selected columns through RapidFuzz.
+- `suggest` mode reports duplicate candidates without deleting rows.
+- `remove_strict` mode deletes only matches above the configured threshold.
+- Duplicate reports include kept rows, matched rows, scores, and reasons.
+
+### Validation And Data Quality
+
+- Type inference presents suggestions without changing the dataset.
+- Missing value handling can keep values, drop rows, fill static values, or use mean, median, or mode where appropriate.
+- Validation rules cover required values, ranges, positive numbers, allowed values, email validity, and date parseability.
+- Validation failures are reported instead of silently corrected.
+
+## Fixture Dataset
+
+The repository includes realistic messy customer data:
 
 - `tests/fixtures/dirty_realistic_customers.csv`
 - `tests/fixtures/dirty_realistic_customers.xlsx`
 
-It includes duplicate and fuzzy-duplicate customers, mixed date formats, invalid email, inconsistent casing, extra spaces, missing values, a broken date, invalid phone data, and an invalid status.
+The fixture includes duplicate and fuzzy-duplicate customers, mixed date formats, invalid emails, inconsistent casing, extra spaces, missing values, a broken date, invalid phone data, and invalid status values.
 
-The golden cleaned output and report snapshots are checked in:
+Golden outputs are checked in:
 
 - `tests/fixtures/expected_realistic_customers_clean.json`
 - `tests/fixtures/expected_realistic_customers_report.json`
 
-Example result:
+Example cleaned records:
 
 ```json
 [
@@ -192,33 +247,36 @@ Example result:
 ]
 ```
 
+## Tests
+
+```bash
+python3 -m pytest -q
+cd web
+npm run build
+```
+
+The Python test suite covers architecture boundaries, file adapters, operations, pipeline behavior, golden fixtures, CLI behavior, and API flows. The web build verifies the Next.js interface and TypeScript contracts.
+
 ## Homebrew
 
-For local Homebrew installation from the current repository:
+Install from the repository formula:
 
 ```bash
 brew install --HEAD ./Formula/rinse.rb
 rinse --help
 ```
 
-For a public tap after the first release:
+For a public tap after release:
 
 ```bash
 brew tap Hqzdev/rinse
 brew install rinse
 ```
 
-## First milestone
+## Current Limitations
 
-The first MVP milestone is complete:
-
-1. Architecture skeleton.
-2. CSV/XLSX/JSON readers and writers.
-3. Cleaning pipeline and structured report model.
-4. Exact and fuzzy deduplication.
-5. Normalization operations.
-6. CLI and sample datasets.
-7. Required-value validation.
-8. JSON audit report export.
-9. CLI file conversion through output formats.
-10. Column type suggestions, missing-value handling, and validation rules.
+- The API uses a local background executor, SQLite metadata, and filesystem artifact storage by default.
+- Distributed job queues, PostgreSQL metadata, and object storage are deployment adapter work, not local defaults.
+- Fuzzy deduplication should stay in `suggest` mode unless thresholds and comparison columns are chosen carefully.
+- PDF report export is intentionally deferred while HTML reports remain the human-readable artifact format.
+- Web recent jobs are session-local; a backend list-jobs endpoint is the next step for shared multi-session history.

@@ -151,10 +151,10 @@ export const architectureLayers = [
   },
   {
     title: "Adapters",
-    detail: "Pandas file IO, JSON reports, phone normalization, RapidFuzz similarity, and future HTML reports."
+    detail: "Pandas file IO, JSON and HTML reports, phone normalization, and RapidFuzz similarity."
   },
   {
     title: "Interfaces",
-    detail: "Typer CLI today. FastAPI and a product demo surface after the core stays trustworthy."
+    detail: "Typer CLI, FastAPI endpoints, and a Next.js surface over the same cleaning pipeline."
   }
 ];
