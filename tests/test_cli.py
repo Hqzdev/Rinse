@@ -98,6 +98,56 @@ class CliTests(unittest.TestCase):
             self.assertEqual(content["rows_after"], 1)
             self.assertEqual(content["operations"], [])
 
+    def test_clean_supports_type_inference_missing_values_and_validation_rules(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "dirty.csv"
+            target = Path(directory) / "clean.json"
+            report = Path(directory) / "report.json"
+            source.write_text(
+                "name,email,signup_date,amount,status\n"
+                "Alice,alice@example.com,2026-01-02,10,active\n"
+                "Bob,bad,broken,,draft\n"
+                "Carla,carla@example.com,2026-02-03,-5,blocked\n"
+            )
+            result = CliRunner().invoke(
+                app,
+                [
+                    "clean",
+                    str(source),
+                    "--out",
+                    str(target),
+                    "--report",
+                    str(report),
+                    "--infer-types",
+                    "--type-columns",
+                    "amount,signup_date",
+                    "--missing-policy",
+                    "fill",
+                    "--missing-columns",
+                    "amount",
+                    "--fill-value",
+                    "1",
+                    "--validate",
+                    "email,date,positive,allowed",
+                    "--valid-email-columns",
+                    "email",
+                    "--parseable-date-columns",
+                    "signup_date",
+                    "--positive-columns",
+                    "amount",
+                    "--allowed-columns",
+                    "status",
+                    "--allowed-values",
+                    "active,blocked",
+                ],
+            )
+            self.assertEqual(result.exit_code, 0)
+            content = json.loads(report.read_text())
+            self.assertEqual(content["cells_changed"], 1)
+            self.assertEqual(content["validation_issue_count"], 4)
+            self.assertEqual(content["operations"][0]["type_suggestions"][0]["column"], "amount")
+            self.assertEqual(content["operations"][1]["cell_changes"][0]["after"], "1")
+
     def test_clean_returns_nonzero_for_missing_input(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "clean.csv"

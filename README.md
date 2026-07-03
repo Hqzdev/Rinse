@@ -48,11 +48,14 @@ Rinse supports exact deduplication and fuzzy deduplication as pipeline operation
 
 ## Validation
 
-Rinse includes required-value validation as a first standalone validation operation:
+Rinse includes standalone data-quality operations:
 
-- required columns can be checked before or after normalization.
-- blank strings and empty spreadsheet cells are reported as validation issues.
+- probable column types can be inferred as suggestions without mutating data.
+- explicit type overrides can be supplied when inference would be misleading.
+- missing values can be kept, dropped by row, filled with a static value, mean, median, or mode.
+- required, numeric range, positive number, allowed values, email, and date parseability rules can be checked.
 - validation issues include row, column, rule, value, and message details in the audit report.
+- missing value changes are represented as normal cell changes in the audit report.
 
 ## Normalization
 
@@ -71,6 +74,7 @@ Rinse exposes the core pipeline through a terminal interface:
 rinse profile tests/fixtures/dirty_customers.csv
 rinse clean tests/fixtures/dirty_customers.csv --out clean.xlsx --normalize text,email --text-columns name --email-columns email
 rinse clean tests/fixtures/dirty_customers.csv --out clean.json --validate required --required-columns name,email --report report.json
+rinse clean tests/fixtures/dirty_customers.csv --out clean.json --infer-types --missing-policy fill --missing-columns email --fill-value unknown@example.com --validate email,date --valid-email-columns email --parseable-date-columns signup_date --report report.json
 ```
 
 The CLI reads and writes through adapters, converts between supported file formats based on the output extension, and runs the same application pipeline that future API and web interfaces will call.
@@ -83,6 +87,7 @@ The `--report` option writes a machine-readable JSON report:
 - rows removed, cells changed, validation issue count, and duplicate group count.
 - detailed cell changes with before/after values.
 - detailed validation issues and duplicate groups.
+- type inference suggestions with confidence and reason.
 
 ## Homebrew
 
@@ -113,3 +118,4 @@ The first MVP milestone is complete:
 7. Required-value validation.
 8. JSON audit report export.
 9. CLI file conversion through output formats.
+10. Column type suggestions, missing-value handling, and validation rules.

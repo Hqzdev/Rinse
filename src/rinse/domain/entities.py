@@ -43,6 +43,22 @@ class ValidationIssue:
 
 
 @dataclass(frozen=True)
+class ColumnTypeSuggestion:
+    column: ColumnName
+    suggested_type: str
+    confidence: float
+    reason: str
+
+    def __post_init__(self) -> None:
+        if not self.suggested_type.strip():
+            raise ValueError("Suggested type cannot be empty")
+        if not 0 <= self.confidence <= 1:
+            raise ValueError("Type suggestion confidence must be between 0 and 1")
+        if not self.reason.strip():
+            raise ValueError("Type suggestion reason cannot be empty")
+
+
+@dataclass(frozen=True)
 class DuplicateGroup:
     kept_row: RowIndex
     matched_rows: tuple[RowIndex, ...]
@@ -65,6 +81,7 @@ class OperationResult:
     cells_changed: tuple[CellChange, ...] = field(default_factory=tuple)
     validation_issues: tuple[ValidationIssue, ...] = field(default_factory=tuple)
     duplicate_groups: tuple[DuplicateGroup, ...] = field(default_factory=tuple)
+    type_suggestions: tuple[ColumnTypeSuggestion, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if not self.name.strip():
@@ -116,6 +133,15 @@ class CleaningReport:
                     "cells_changed": len(result.cells_changed),
                     "validation_issues": len(result.validation_issues),
                     "duplicate_groups": len(result.duplicate_groups),
+                    "type_suggestions": [
+                        {
+                            "column": suggestion.column.value,
+                            "suggested_type": suggestion.suggested_type,
+                            "confidence": suggestion.confidence,
+                            "reason": suggestion.reason,
+                        }
+                        for suggestion in result.type_suggestions
+                    ],
                     "cell_changes": [
                         {
                             "row": change.row.value,
