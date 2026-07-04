@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rinse"
-version = "0.1.0"
+version = "0.1.1"
 description = "Clean messy CSV and Excel files with auditable data-cleaning pipelines."
 readme = "README.md"
 requires-python = ">=3.9"
