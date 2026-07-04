@@ -1,5 +1,10 @@
 # Rinse
 
+[![CI](https://github.com/Hqzdev/Rinse/actions/workflows/ci.yml/badge.svg)](https://github.com/Hqzdev/Rinse/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![Next.js](https://img.shields.io/badge/web-Next.js-black)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 Rinse is an auditable data-cleaning tool for messy CSV and Excel files. It normalizes inconsistent values, validates data quality rules, detects exact and fuzzy duplicates, exports clean datasets, and produces a structured report that explains what changed.
 
 The project is built as a product-grade cleaning engine rather than a one-off pandas script. The core workflow lives behind application use cases and ports, so the same behavior is available through the CLI, FastAPI adapter, and Next.js web interface.
@@ -18,15 +23,16 @@ The project is built as a product-grade cleaning engine rather than a one-off pa
 ## Quickstart
 
 ```bash
+python3 -m pip install --upgrade pip
 python3 -m pip install -e ".[dev]"
 python3 -m pytest -q
-rinse --help
+python3 -m rinse.interfaces.cli --help
 ```
 
 Run a basic clean:
 
 ```bash
-rinse clean tests/fixtures/dirty_customers.csv \
+python3 -m rinse.interfaces.cli clean tests/fixtures/dirty_customers.csv \
   --out clean.json \
   --normalize text,email \
   --text-columns name \
@@ -37,7 +43,7 @@ rinse clean tests/fixtures/dirty_customers.csv \
 Inspect a dataset before cleaning:
 
 ```bash
-rinse profile tests/fixtures/dirty_realistic_customers.csv
+python3 -m rinse.interfaces.cli profile tests/fixtures/dirty_realistic_customers.csv
 ```
 
 ## Architecture
@@ -64,10 +70,10 @@ This keeps the cleaning behavior testable and reusable instead of coupling it to
 
 ## CLI
 
-The CLI is built with Typer and calls application use cases instead of duplicating cleaning logic.
+The CLI is built with Typer and calls application use cases instead of duplicating cleaning logic. In a source checkout, `python3 -m rinse.interfaces.cli` is the most reliable command because it bypasses stale global executables. After Homebrew or PATH-based installation, use `rinse`.
 
 ```bash
-rinse clean tests/fixtures/dirty_customers.csv \
+python3 -m rinse.interfaces.cli clean tests/fixtures/dirty_customers.csv \
   --out clean.xlsx \
   --normalize text,email \
   --text-columns name \
@@ -77,7 +83,7 @@ rinse clean tests/fixtures/dirty_customers.csv \
 Run validation and write a JSON report:
 
 ```bash
-rinse clean tests/fixtures/dirty_customers.csv \
+python3 -m rinse.interfaces.cli clean tests/fixtures/dirty_customers.csv \
   --out clean.json \
   --validate required \
   --required-columns name,email \
@@ -87,7 +93,7 @@ rinse clean tests/fixtures/dirty_customers.csv \
 Run a fuller data-quality workflow:
 
 ```bash
-rinse clean tests/fixtures/dirty_realistic_customers.csv \
+python3 -m rinse.interfaces.cli clean tests/fixtures/dirty_realistic_customers.csv \
   --out clean.json \
   --normalize text,email,date,phone \
   --text-columns name,status \
@@ -157,6 +163,16 @@ The first screen supports:
 - clean job status and recent jobs;
 - clean file and audit report downloads.
 
+## Screenshots
+
+Desktop web workflow:
+
+![Rinse desktop workflow](docs/screenshots/web-desktop-completed.png)
+
+Mobile web workflow:
+
+![Rinse mobile workflow](docs/screenshots/web-mobile.png)
+
 ## Reports
 
 Reports are generated from `CleaningReport` data, not console output. JSON reports are machine-readable, and HTML reports are intended for human review.
@@ -177,7 +193,7 @@ Report contents include:
 Generate an HTML report:
 
 ```bash
-rinse clean tests/fixtures/dirty_customers.csv \
+python3 -m rinse.interfaces.cli clean tests/fixtures/dirty_customers.csv \
   --out clean.json \
   --validate required \
   --required-columns name,email \

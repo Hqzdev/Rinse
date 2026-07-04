@@ -1085,9 +1085,16 @@ code {
   align-items: start;
 }
 
+.demo-shell > *,
+.preview-grid > *,
+.report-grid > * {
+  min-width: 0;
+}
+
 .demo-intro {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 520px;
   justify-content: flex-end;
   padding: clamp(28px, 5vw, 54px);
@@ -1105,6 +1112,7 @@ code {
   font-size: clamp(42px, 6vw, 76px);
   font-weight: 560;
   line-height: 1.02;
+  overflow-wrap: anywhere;
 }
 
 .demo-intro p {
@@ -1213,10 +1221,12 @@ code {
 .demo-control-panel {
   display: grid;
   gap: 14px;
+  min-width: 0;
 }
 
 .demo-card,
 .live-table-card {
+  min-width: 0;
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow);
@@ -1493,12 +1503,13 @@ code {
   }
 
   .demo-intro h1 {
-    font-size: clamp(38px, 13vw, 54px);
+    font-size: clamp(36px, 10.5vw, 44px);
   }
 
   .demo-upload,
   .demo-button,
   .download-actions a {
+    max-width: 100%;
     width: 100%;
   }
 
